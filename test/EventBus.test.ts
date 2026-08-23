@@ -29,3 +29,10 @@ test("passes the exact payload to the callback", () => {
 
     assert.strictEqual(receivedPayload, payload);
 });
+
+//"invokes multiple listeners for the same event"
+//"removes a subscribed callback"
+//"removing one callback leaves other callbacks subscribed"
+//"emitting an unknown event does not throw"
+//"removing a callback from an unknown event does not throw"
+//"does not invoke listeners belonging to another event"
