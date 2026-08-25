@@ -1,6 +1,17 @@
 import { EventBus } from "./EventBus.js";
 
-const bus = new EventBus();
+type AppEvents = {
+    "user.created": {
+        userId: string;
+        email: string;
+    };
+
+    "payment.completed": {
+        amount: number
+    };
+}
+
+const bus = new EventBus<AppEvents>();
 
 const firstListener = (data: unknown) => {
     console.log("First listener:", data);

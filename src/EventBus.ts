@@ -1,4 +1,6 @@
-export class EventBus {
+
+
+export class EventBus<TEvents> {
     private listeners: Map<string, Function[]>;
 
     constructor() {
