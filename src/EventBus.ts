@@ -7,12 +7,12 @@ export class EventBus<TEvents> {
         this.listeners = new Map();
     }
 
-    on<K extends keyof TEvents>(event: string, callback: Function): void {
+    on<K extends keyof TEvents>(event: K, callback: Function): void {
         // 1. Look up the array for this event.
         // 2. If it exists, append the callback.
         // 3. Otherwise, create a new array containing the callback.
-        const eventListeners: Function[] = this.listeners.get(event) || [];
-        this.listeners.set(event, [...eventListeners, callback]);
+        const eventListeners: Function[] = this.listeners.get(String(event)) || [];
+        this.listeners.set(String(event), [...eventListeners, callback]);
     }
 
     emit(event: string, payload: unknown): void {
