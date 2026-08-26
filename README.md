@@ -1,14 +1,16 @@
 # Type-safe Event Bus
 
-An event bus built from scratch in TypeScript.
+A lightweight, strongly typed event bus for TypeScript applications. It lets
+different parts of an application communicate through events while guaranteeing
+at compile time that event names and payloads are correct.
 
-This is an open-source learning project focused on understanding TypeScript in
-depth. The project starts with a deliberately simple, loosely typed event bus.
-Type safety will be introduced gradually as the API evolves.
+This is an open-source learning project built incrementally, starting with a
+simple JavaScript-style event bus and introducing stronger TypeScript features
+one phase at a time.
 
 > [!NOTE]
-> The current Phase 1 implementation is not type-safe yet. Event names are
-> strings and callbacks use the broad `Function` type intentionally.
+> The project currently includes the typed event map, restricted event names,
+> event-specific payloads, and typed internal listener storage (Phases 1–5).
 
 ## Features
 
@@ -17,6 +19,8 @@ Type safety will be introduced gradually as the API evolves.
 - Register multiple listeners for the same event
 - Remove a listener
 - Safely emit or unsubscribe from unknown events
+- Reject unknown event names at compile time
+- Enforce the correct payload type for each event
 
 ## Getting started
 
@@ -54,19 +58,34 @@ npm test
 ```ts
 import { EventBus } from "./EventBus.js";
 
-const bus = new EventBus();
+type AppEvents = {
+  "user.created": {
+    userId: string;
+    name: string;
+  };
+  "payment.completed": {
+    amount: number;
+  };
+};
 
-const handleUserCreated = (data: unknown) => {
-  console.log("User created:", data);
+const bus = new EventBus<AppEvents>();
+
+const handleUserCreated = (payload: AppEvents["user.created"]) => {
+  console.log("User created:", payload.name);
 };
 
 bus.on("user.created", handleUserCreated);
 
 bus.emit("user.created", {
   userId: "123",
+  name: "Alice",
 });
 
 bus.off("user.created", handleUserCreated);
+
+// Compile-time errors:
+// bus.emit("unknown.event", {});
+// bus.emit("payment.completed", { amount: "100" });
 ```
 
 The same function reference must be passed to `on` and `off`. Two arrow
@@ -74,28 +93,39 @@ functions with identical code are still different function objects.
 
 ## API
 
-### `on(event, callback)`
+### `on<K extends keyof TEvents>(event, callback)`
 
-Subscribes a callback to an event.
+Subscribes a callback to an event. The callback payload is inferred from the
+event name.
 
-### `emit(event, payload)`
+### `emit<K extends keyof TEvents>(event, payload)`
 
 Invokes every callback subscribed to an event and passes the payload to each
-one. Emitting an event with no listeners does nothing.
+one. The payload must match the selected event's type. Emitting an event with
+no listeners does nothing.
 
-### `off(event, callback)`
+### `off<K extends keyof TEvents>(event, callback)`
 
 Removes the matching callback from an event. Unsubscribing from an unknown
 event does nothing.
 
 ## Learning roadmap
 
-- **Phase 1 — Runtime behavior:** Build the basic event bus with strings,
-  `Function`, `Map`, and arrays.
-- **Later phases — Type safety:** Introduce precise callback types, event maps,
-  generics, `keyof`, indexed access types, and inference.
+- [x] **Phase 1 — Build the dumb JavaScript version first**
+- [x] **Phase 2 — Introduce the event map**
+- [x] **Phase 3 — Restrict event names with `keyof`**
+- [x] **Phase 4 — Make payload types depend on event names**
+- [x] **Phase 5 — Type the internal listener storage properly**
+- [ ] **Phase 6 — Implement `once()`**
+- [ ] **Phase 7 — Return an unsubscribe function**
+- [ ] **Phase 8 — Support async listeners**
+- [ ] **Phase 9 — Add error handling**
+- [ ] **Phase 10 — Add wildcard listeners**
+- [ ] **Phase 11 — Add tests**
+- [ ] **Phase 12 — Package it properly**
 
-Phase 1 is complete when all expected runtime behaviors are covered by tests.
+Runtime and compile-time tests are being added throughout development. Phase 11
+will consolidate and complete the test suite for the finished API.
 
 ## Project structure
 
