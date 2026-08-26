@@ -3,7 +3,7 @@ import { EventBus } from "./EventBus.js";
 type AppEvents = {
     "user.created": {
         userId: string;
-        email: string;
+        name: string;
     };
 
     "payment.completed": {
@@ -24,10 +24,10 @@ const secondListener = (data: unknown) => {
 bus.on("user.created", firstListener);
 bus.on("user.created", secondListener);
 
-bus.emit("user.created", { id: 1, name: "Alice" });
+bus.emit("user.created", { userId: '1', name: "Alice" });
 
 bus.off("user.created", firstListener);
 
-bus.emit("user.created", { id: 2, name: "Bob" });
+bus.emit("user.created", { userId: '2', name: "Bob" });
 
-bus.emit("unknown.event", null);
+// bus.emit("unknown.event", null);
