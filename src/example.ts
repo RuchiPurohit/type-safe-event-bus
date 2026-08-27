@@ -30,4 +30,11 @@ bus.off("user.created", firstListener);
 
 bus.emit("user.created", { userId: '2', name: "Bob" });
 
+bus.once("payment.completed", (payload) => {
+    console.log("One-time payment listener:", payload.amount);
+});
+
+bus.emit("payment.completed", { amount: 100 }); // Listener runs
+bus.emit("payment.completed", { amount: 200 }); // Listener does not run again
+
 // bus.emit("unknown.event", null);

@@ -13,6 +13,14 @@ export class EventBus<TEvents> {
         this.listeners = {};
     }
 
+    once<K extends keyof TEvents>(event: K, callback: Listener<TEvents[K]>): void {
+        const wrapper: Listener<TEvents[K]> = (payload) => {
+            this.off(event, wrapper);
+            callback(payload);
+        }
+        this.on(event, wrapper);
+    }
+
     on<K extends keyof TEvents>(event: K, callback: Listener<TEvents[K]>): void {
         // 1. Look up the array for this event.
         // 2. If it exists, append the callback.
