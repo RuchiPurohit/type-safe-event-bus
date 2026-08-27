@@ -225,3 +225,40 @@ test("rejects a listener with the wrong payload type", () => {
     // @ts-expect-error - payment listener cannot handle user.created payloads
     bus.on("user.created", paymentListener);
 });
+
+test("invokes a once listener only once", () => {
+    const bus = new EventBus<TestEvents>();
+    let callCount = 0;
+
+    bus.once("user.created", () => {
+        callCount += 1;
+    });
+
+    bus.emit("user.created", {
+        userId: "1",
+        name: "Alice",
+    });
+
+    bus.emit("user.created", {
+        userId: "2",
+        name: "Bob",
+    });
+
+    assert.equal(callCount, 1);
+});
+
+test("passes the correctly typed payload to a once listener", () => {
+    const bus = new EventBus<TestEvents>();
+    let receivedName: string | undefined;
+
+    bus.once("user.created", (payload) => {
+        receivedName = payload.name;
+    });
+
+    bus.emit("user.created", {
+        userId: "1",
+        name: "Alice",
+    });
+
+    assert.equal(receivedName, "Alice");
+});
