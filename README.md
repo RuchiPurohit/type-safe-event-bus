@@ -10,15 +10,17 @@ one phase at a time.
 
 > [!NOTE]
 > The project currently includes the typed event map, restricted event names,
-> event-specific payloads, and typed internal listener storage (Phases 1–5).
+> event-specific payloads, typed internal listener storage, one-time listeners,
+> and unsubscribe functions (Phases 1–7).
 
 ## Features
 
 - Subscribe a listener to an event
 - Emit an event with a payload
 - Register multiple listeners for the same event
+- Register a listener that runs only once
+- Unsubscribe using the function returned by `on()`
 - Remove a listener
-- Safely emit or unsubscribe from unknown events
 - Reject unknown event names at compile time
 - Enforce the correct payload type for each event
 
@@ -66,6 +68,9 @@ type AppEvents = {
   "payment.completed": {
     amount: number;
   };
+  "user.deleted": {
+    userId: string;
+  };
 };
 
 const bus = new EventBus<AppEvents>();
@@ -74,21 +79,29 @@ const handleUserCreated = (payload: AppEvents["user.created"]) => {
   console.log("User created:", payload.name);
 };
 
-bus.on("user.created", handleUserCreated);
+const unsubscribe = bus.on("user.created", handleUserCreated);
 
 bus.emit("user.created", {
   userId: "123",
   name: "Alice",
 });
 
-bus.off("user.created", handleUserCreated);
+unsubscribe();
+
+bus.once("payment.completed", (payload) => {
+  console.log("Payment completed:", payload.amount);
+});
+
+bus.emit("payment.completed", { amount: 100 }); // Listener runs
+bus.emit("payment.completed", { amount: 200 }); // Listener does not run
 
 // Compile-time errors:
 // bus.emit("unknown.event", {});
 // bus.emit("payment.completed", { amount: "100" });
 ```
 
-The same function reference must be passed to `on` and `off`. Two arrow
+You can also remove a listener manually with `off(event, callback)`. When using
+`off`, pass the same function reference that was passed to `on`; two arrow
 functions with identical code are still different function objects.
 
 ## API
@@ -96,7 +109,13 @@ functions with identical code are still different function objects.
 ### `on<K extends keyof TEvents>(event, callback)`
 
 Subscribes a callback to an event. The callback payload is inferred from the
-event name.
+event name. Returns an idempotent unsubscribe function that removes that
+specific listener.
+
+### `once<K extends keyof TEvents>(event, callback)`
+
+Subscribes a callback that is invoked only for the first matching event. The
+listener removes itself before the callback runs.
 
 ### `emit<K extends keyof TEvents>(event, payload)`
 
@@ -116,8 +135,8 @@ event does nothing.
 - [x] **Phase 3 — Restrict event names with `keyof`**
 - [x] **Phase 4 — Make payload types depend on event names**
 - [x] **Phase 5 — Type the internal listener storage properly**
-- [ ] **Phase 6 — Implement `once()`**
-- [ ] **Phase 7 — Return an unsubscribe function**
+- [x] **Phase 6 — Implement `once()`**
+- [x] **Phase 7 — Return an unsubscribe function**
 - [ ] **Phase 8 — Support async listeners**
 - [ ] **Phase 9 — Add error handling**
 - [ ] **Phase 10 — Add wildcard listeners**
