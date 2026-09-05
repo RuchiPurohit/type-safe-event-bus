@@ -11,7 +11,7 @@ one phase at a time.
 > [!NOTE]
 > The project currently includes the typed event map, restricted event names,
 > event-specific payloads, typed internal listener storage, one-time listeners,
-> and unsubscribe functions (Phases 1–7).
+> unsubscribe functions, and async listeners (Phases 1–8).
 
 ## Features
 
@@ -21,6 +21,8 @@ one phase at a time.
 - Register a listener that runs only once
 - Unsubscribe using the function returned by `on()`
 - Remove a listener
+- Register synchronous or asynchronous listeners
+- Await all listeners with `emitAsync()`
 - Reject unknown event names at compile time
 - Enforce the correct payload type for each event
 
@@ -95,6 +97,22 @@ bus.once("payment.completed", (payload) => {
 bus.emit("payment.completed", { amount: 100 }); // Listener runs
 bus.emit("payment.completed", { amount: 200 }); // Listener does not run
 
+bus.on("user.created", async (payload) => {
+  await saveToDatabase(payload);
+});
+
+// Starts all listeners without waiting for asynchronous work to finish.
+bus.emit("user.created", {
+  userId: "456",
+  name: "Bob",
+});
+
+// Resolves after every listener has finished.
+await bus.emitAsync("user.created", {
+  userId: "789",
+  name: "Carol",
+});
+
 // Compile-time errors:
 // bus.emit("unknown.event", {});
 // bus.emit("payment.completed", { amount: "100" });
@@ -110,7 +128,7 @@ functions with identical code are still different function objects.
 
 Subscribes a callback to an event. The callback payload is inferred from the
 event name. Returns an idempotent unsubscribe function that removes that
-specific listener.
+specific listener. The callback may return either `void` or `Promise<void>`.
 
 ### `once<K extends keyof TEvents>(event, callback)`
 
@@ -120,8 +138,15 @@ listener removes itself before the callback runs.
 ### `emit<K extends keyof TEvents>(event, payload)`
 
 Invokes every callback subscribed to an event and passes the payload to each
-one. The payload must match the selected event's type. Emitting an event with
-no listeners does nothing.
+one. It returns `void` and does not wait for promises returned by async
+listeners. The payload must match the selected event's type. Emitting an event
+with no listeners does nothing.
+
+### `emitAsync<K extends keyof TEvents>(event, payload)`
+
+Invokes every callback subscribed to an event and returns a `Promise<void>`
+that resolves after all listeners have completed. Listeners are started
+concurrently and awaited with `Promise.all()`.
 
 ### `off<K extends keyof TEvents>(event, callback)`
 
@@ -137,7 +162,7 @@ event does nothing.
 - [x] **Phase 5 — Type the internal listener storage properly**
 - [x] **Phase 6 — Implement `once()`**
 - [x] **Phase 7 — Return an unsubscribe function**
-- [ ] **Phase 8 — Support async listeners**
+- [x] **Phase 8 — Support async listeners**
 - [ ] **Phase 9 — Add error handling**
 - [ ] **Phase 10 — Add wildcard listeners**
 - [ ] **Phase 11 — Add tests**
