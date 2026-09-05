@@ -16,7 +16,7 @@ export class EventBus<TEvents> {
     once<K extends keyof TEvents>(event: K, callback: Listener<TEvents[K]>): void {
         const wrapper: Listener<TEvents[K]> = (payload) => {
             this.off(event, wrapper);
-            callback(payload);
+            return callback(payload);
         }
         this.on(event, wrapper);
     }
