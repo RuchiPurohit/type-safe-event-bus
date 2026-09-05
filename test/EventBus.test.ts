@@ -262,3 +262,70 @@ test("passes the correctly typed payload to a once listener", () => {
 
     assert.equal(receivedName, "Alice");
 });
+
+
+test('retuens a function that unsubscribe the callback', () => {
+    type AppEvents = {
+        "user.created": {
+            "userId": string;
+            "name": string;
+        };
+    };
+    const bus = new EventBus<AppEvents>();
+    let callCount = 0;
+
+    const unsubscribe = bus.on("user.created", () => { callCount += 1; });
+
+    bus.emit("user.created", { userId: "123", name: 'ru' });
+    unsubscribe();
+    bus.emit("user.created", { userId: "123", name: 'ru' });
+    assert.equal(callCount, 1);
+    assert.equal(typeof unsubscribe, "function");
+});
+
+test("unsubscribe removes only its associated callback", () => {
+
+    type AppEvents = {
+        "user.created": {
+            "userId": string;
+            "name": string;
+        };
+    };
+    const bus = new EventBus<AppEvents>();
+    const calls: string[] = [];
+
+    const unsubscribeFirst = bus.on("user.created", () => {
+        calls.push("first");
+    });
+
+    bus.on("user.created", () => {
+        calls.push("second");
+    });
+
+    unsubscribeFirst();
+    bus.emit("user.created", { userId: "123", name: 'ru' });
+
+    assert.deepEqual(calls, ["second"]);
+});
+
+test("unsubscribe can be called more than once", () => {
+    type AppEvents = {
+        "user.created": {
+            "userId": string;
+            "name": string;
+        };
+    };
+    const bus = new EventBus<AppEvents>();
+    let called = false;
+
+    const unsubscribe = bus.on("user.created", () => {
+        called = true;
+    });
+
+    unsubscribe();
+    unsubscribe();
+
+    bus.emit("user.created", { userId: "123", name: 'ru' });
+
+    assert.equal(called, false);
+});
