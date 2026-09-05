@@ -329,3 +329,95 @@ test("unsubscribe can be called more than once", () => {
 
     assert.equal(called, false);
 });
+
+test("accepts an async listener", async () => {
+    const bus = new EventBus<TestEvents>();
+    let receivedName: string | undefined;
+
+    bus.on("user.created", async (payload) => {
+        await Promise.resolve();
+        receivedName = payload.name;
+    });
+
+    await bus.emitAsync("user.created", {
+        userId: "1",
+        name: "Alice",
+    });
+
+    assert.equal(receivedName, "Alice");
+});
+
+test("emit returns without waiting for an async listener", async () => {
+    const bus = new EventBus<TestEvents>();
+    let listenerFinished = false;
+
+    bus.on("user.created", async () => {
+        await Promise.resolve();
+        listenerFinished = true;
+    });
+
+    const result = bus.emit("user.created", {
+        userId: "1",
+        name: "Alice",
+    });
+
+    assert.equal(result, undefined);
+    assert.equal(listenerFinished, false);
+
+    await Promise.resolve();
+    assert.equal(listenerFinished, true);
+});
+
+test("emitAsync waits for all listeners", async () => {
+    const bus = new EventBus<TestEvents>();
+    const completedListeners: string[] = [];
+
+    bus.on("user.created", async () => {
+        await Promise.resolve();
+        completedListeners.push("async");
+    });
+
+    bus.on("user.created", () => {
+        completedListeners.push("sync");
+    });
+
+    await bus.emitAsync("user.created", {
+        userId: "1",
+        name: "Alice",
+    });
+
+    assert.deepEqual(completedListeners, ["sync", "async"]);
+});
+
+test("emitAsync waits for an async once listener", async () => {
+    const bus = new EventBus<TestEvents>();
+    let callCount = 0;
+
+    bus.once("user.created", async () => {
+        await Promise.resolve();
+        callCount += 1;
+    });
+
+    await bus.emitAsync("user.created", {
+        userId: "1",
+        name: "Alice",
+    });
+
+    await bus.emitAsync("user.created", {
+        userId: "2",
+        name: "Bob",
+    });
+
+    assert.equal(callCount, 1);
+});
+
+test("emitAsync resolves when an event has no listeners", async () => {
+    const bus = new EventBus<TestEvents>();
+
+    await assert.doesNotReject(
+        bus.emitAsync("user.created", {
+            userId: "1",
+            name: "Alice",
+        }),
+    );
+});

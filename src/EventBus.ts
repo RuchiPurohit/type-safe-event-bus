@@ -1,5 +1,5 @@
 
-type Listener<TPayload> = (payload: TPayload) => void;
+type Listener<TPayload> = (payload: TPayload) => void | Promise<void>;
 
 type ListenerMap<TEvents> = {
     [K in keyof TEvents]?: Listener<TEvents[K]>[];
@@ -16,7 +16,7 @@ export class EventBus<TEvents> {
     once<K extends keyof TEvents>(event: K, callback: Listener<TEvents[K]>): void {
         const wrapper: Listener<TEvents[K]> = (payload) => {
             this.off(event, wrapper);
-            callback(payload);
+            return callback(payload);
         }
         this.on(event, wrapper);
     }
@@ -43,6 +43,18 @@ export class EventBus<TEvents> {
         if (!eventListeners) { return; }
         eventListeners.forEach((listener) => listener(payload));
     }
+
+    async emitAsync<K extends keyof TEvents>(event: K, payload: TEvents[K]): Promise<void> {
+        // 1. Look up this event's listeners.
+        // 2. If there are none, do nothing.
+        // 3. Invoke every listener with the payload.
+
+        const eventListeners = this.listeners[event];
+        if (!eventListeners) { return; }
+        await Promise.all(eventListeners.map((listener) => listener(payload)));
+
+    }
+
     off<K extends keyof TEvents>(event: K, callback: Listener<TEvents[K]>): void {
         // 1. Look up this event's listeners.
         // 2. If there are none, do nothing.
