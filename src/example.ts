@@ -9,6 +9,10 @@ type AppEvents = {
     "payment.completed": {
         amount: number
     };
+
+    "user.deleted": {
+        userId: string;
+    };
 }
 
 const bus = new EventBus<AppEvents>();
@@ -36,5 +40,13 @@ bus.once("payment.completed", (payload) => {
 
 bus.emit("payment.completed", { amount: 100 }); // Listener runs
 bus.emit("payment.completed", { amount: 200 }); // Listener does not run again
+
+const unsubscribe = bus.on("user.deleted", (payload) => {
+    console.log("Deleted user:", payload.userId);
+});
+
+bus.emit("user.deleted", { userId: "1" }); // Listener runs
+unsubscribe();
+bus.emit("user.deleted", { userId: "2" }); // Listener does not run
 
 // bus.emit("unknown.event", null);
