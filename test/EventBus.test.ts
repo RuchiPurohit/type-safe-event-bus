@@ -264,7 +264,7 @@ test("passes the correctly typed payload to a once listener", () => {
 });
 
 
-test('retuens a function that unsubscribe the callback', () => {
+test('returns a function that unsubscribe the callback', () => {
     type AppEvents = {
         "user.created": {
             "userId": string;
