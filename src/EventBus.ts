@@ -51,7 +51,12 @@ export class EventBus<TEvents> {
 
         const eventListeners = this.listeners[event];
         if (!eventListeners) { return; }
-        eventListeners.forEach((listener) => listener(payload));
+        eventListeners.forEach((listener) => {
+
+            try { listener(payload); } catch (error: unknown) {
+                this.handleError(error, event);
+            }
+        });
     }
 
     async emitAsync<K extends keyof TEvents>(event: K, payload: TEvents[K]): Promise<void> {
