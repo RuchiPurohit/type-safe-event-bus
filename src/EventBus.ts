@@ -11,7 +11,7 @@ export class EventBus<TEvents> {
     private listeners: ListenerMap<TEvents>;
     private readonly options: EventBusOptions<TEvents>;
 
-    constructor(options: EventBusOptions<TEvents>) {
+    constructor(options: EventBusOptions<TEvents> = {} as EventBusOptions<TEvents>) {
         this.listeners = {};
         this.options = options;
     }
