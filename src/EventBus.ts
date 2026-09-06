@@ -1,3 +1,4 @@
+import { EventBusOptions } from "./EventBusOptions";
 
 type Listener<TPayload> = (payload: TPayload) => void | Promise<void>;
 
@@ -8,9 +9,18 @@ type ListenerMap<TEvents> = {
 
 export class EventBus<TEvents> {
     private listeners: ListenerMap<TEvents>;
+    private readonly options: EventBusOptions<TEvents>;
 
-    constructor() {
+    constructor(options: EventBusOptions<TEvents>) {
         this.listeners = {};
+        this.options = options;
+    }
+
+    private handleError(error: unknown, event: keyof TEvents): void {
+        // this.options.onError?.(error, event);
+        if (this.options.onError) {
+            this.options.onError(error, event);
+        }
     }
 
     once<K extends keyof TEvents>(event: K, callback: Listener<TEvents[K]>): void {
