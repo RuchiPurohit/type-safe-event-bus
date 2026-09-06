@@ -53,7 +53,12 @@ export class EventBus<TEvents> {
         if (!eventListeners) { return; }
         eventListeners.forEach((listener) => {
 
-            try { listener(payload); } catch (error: unknown) {
+            try {
+                const result = listener(payload);
+                void Promise.resolve(result).catch((error: unknown) => {
+                    this.handleError(error, event);
+                })
+            } catch (error: unknown) {
                 this.handleError(error, event);
             }
         });
