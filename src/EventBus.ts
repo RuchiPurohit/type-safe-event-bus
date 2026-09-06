@@ -71,7 +71,15 @@ export class EventBus<TEvents> {
 
         const eventListeners = this.listeners[event];
         if (!eventListeners) { return; }
-        await Promise.all(eventListeners.map((listener) => listener(payload)));
+        await Promise.all(eventListeners.map(async (listener) => {
+            try {
+                listener(payload);
+            } catch (error: unknown) {
+                this.handleError(error, event);
+
+            };
+        }
+        ));
 
     }
 
