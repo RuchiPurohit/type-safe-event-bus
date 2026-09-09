@@ -11,7 +11,8 @@ one phase at a time.
 > [!NOTE]
 > The project currently includes the typed event map, restricted event names,
 > event-specific payloads, typed internal listener storage, one-time listeners,
-> unsubscribe functions, and async listeners (Phases 1–8).
+> unsubscribe functions, async listeners, and configurable listener error
+> handling (Phases 1–9).
 
 ## Features
 
@@ -23,6 +24,8 @@ one phase at a time.
 - Remove a listener
 - Register synchronous or asynchronous listeners
 - Await all listeners with `emitAsync()`
+- Report listener failures through an optional `onError` callback
+- Continue invoking listeners when another listener fails
 - Reject unknown event names at compile time
 - Enforce the correct payload type for each event
 
@@ -75,7 +78,21 @@ type AppEvents = {
   };
 };
 
-const bus = new EventBus<AppEvents>();
+const bus = new EventBus<AppEvents>({
+  onError(error, event) {
+    console.error("Listener failed for event:", event);
+
+    if (error instanceof Error) {
+      console.error(error.message);
+    }
+  },
+});
+
+async function saveToDatabase(
+  payload: AppEvents["user.created"]
+): Promise<void> {
+  console.log("Saving user:", payload);
+}
 
 const handleUserCreated = (payload: AppEvents["user.created"]) => {
   console.log("User created:", payload.name);
@@ -101,6 +118,10 @@ bus.on("user.created", async (payload) => {
   await saveToDatabase(payload);
 });
 
+bus.on("user.created", () => {
+  throw new Error("Unable to notify analytics");
+});
+
 // Starts all listeners without waiting for asynchronous work to finish.
 bus.emit("user.created", {
   userId: "456",
@@ -122,7 +143,30 @@ You can also remove a listener manually with `off(event, callback)`. When using
 `off`, pass the same function reference that was passed to `on`; two arrow
 functions with identical code are still different function objects.
 
+Errors have the type `unknown` because JavaScript allows any value to be
+thrown. Narrow the value, for example with `error instanceof Error`, before
+accessing properties such as `error.message`.
+
 ## API
+
+### `new EventBus<TEvents>(options?)`
+
+Creates an event bus. The optional configuration object accepts an `onError`
+callback:
+
+```ts
+interface EventBusOptions<TEvents> {
+  onError?: (error: unknown, event: keyof TEvents) => void;
+}
+```
+
+When a listener throws or returns a rejected promise, the bus passes the error
+and the typed event name to `onError` when that callback is configured. Without
+an error callback, listener failures are ignored. If no options are needed, the
+constructor can still be called without an argument.
+
+The `onError` callback should not throw. An error thrown by the error handler
+itself can escape the event bus and interrupt listener processing.
 
 ### `on<K extends keyof TEvents>(event, callback)`
 
@@ -140,13 +184,17 @@ listener removes itself before the callback runs.
 Invokes every callback subscribed to an event and passes the payload to each
 one. It returns `void` and does not wait for promises returned by async
 listeners. The payload must match the selected event's type. Emitting an event
-with no listeners does nothing.
+with no listeners does nothing. Listener failures are reported through
+`onError`, when configured, without preventing the remaining listeners from
+being invoked.
 
 ### `emitAsync<K extends keyof TEvents>(event, payload)`
 
 Invokes every callback subscribed to an event and returns a `Promise<void>`
 that resolves after all listeners have completed. Listeners are started
-concurrently and awaited with `Promise.all()`.
+concurrently and awaited with `Promise.all()`. Each listener invocation is
+wrapped independently so one failure does not prevent the other listeners from
+completing. Failures are passed to `onError` when it is configured.
 
 ### `off<K extends keyof TEvents>(event, callback)`
 
@@ -163,7 +211,7 @@ event does nothing.
 - [x] **Phase 6 — Implement `once()`**
 - [x] **Phase 7 — Return an unsubscribe function**
 - [x] **Phase 8 — Support async listeners**
-- [ ] **Phase 9 — Add error handling**
+- [x] **Phase 9 — Add error handling**
 - [ ] **Phase 10 — Add wildcard listeners**
 - [ ] **Phase 11 — Add tests**
 - [ ] **Phase 12 — Package it properly**
@@ -175,10 +223,11 @@ will consolidate and complete the test suite for the finished API.
 
 ```text
 src/
-  EventBus.ts       Event bus implementation
-  example.ts        Usage example
+  EventBus.ts          Event bus implementation
+  EventBusOptions.ts   Error-handling configuration type
+  example.ts           Usage example
 test/
-  EventBus.test.ts  Behavior tests
+  EventBus.test.ts     Behavior tests
 ```
 
 ## Contributing

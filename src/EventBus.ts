@@ -1,3 +1,4 @@
+import { EventBusOptions } from "./EventBusOptions";
 
 type Listener<TPayload> = (payload: TPayload) => void | Promise<void>;
 
@@ -8,9 +9,18 @@ type ListenerMap<TEvents> = {
 
 export class EventBus<TEvents> {
     private listeners: ListenerMap<TEvents>;
+    private readonly options: EventBusOptions<TEvents>;
 
-    constructor() {
+    constructor(options: EventBusOptions<TEvents> = {} as EventBusOptions<TEvents>) {
         this.listeners = {};
+        this.options = options;
+    }
+
+    private handleError(error: unknown, event: keyof TEvents): void {
+        // this.options.onError?.(error, event);
+        if (this.options.onError) {
+            this.options.onError(error, event);
+        }
     }
 
     once<K extends keyof TEvents>(event: K, callback: Listener<TEvents[K]>): void {
@@ -41,7 +51,17 @@ export class EventBus<TEvents> {
 
         const eventListeners = this.listeners[event];
         if (!eventListeners) { return; }
-        eventListeners.forEach((listener) => listener(payload));
+        eventListeners.forEach((listener) => {
+
+            try {
+                const result = listener(payload);
+                void Promise.resolve(result).catch((error: unknown) => {
+                    this.handleError(error, event);
+                })
+            } catch (error: unknown) {
+                this.handleError(error, event);
+            }
+        });
     }
 
     async emitAsync<K extends keyof TEvents>(event: K, payload: TEvents[K]): Promise<void> {
@@ -51,7 +71,15 @@ export class EventBus<TEvents> {
 
         const eventListeners = this.listeners[event];
         if (!eventListeners) { return; }
-        await Promise.all(eventListeners.map((listener) => listener(payload)));
+        await Promise.all(eventListeners.map(async (listener) => {
+            try {
+                await listener(payload);
+            } catch (error: unknown) {
+                this.handleError(error, event);
+
+            };
+        }
+        ));
 
     }
 

@@ -15,7 +15,16 @@ type AppEvents = {
     };
 }
 
-const bus = new EventBus<AppEvents>();
+const bus = new EventBus<AppEvents>(
+    {
+        onError: (error, event) => {
+            console.error("Listener failed for event:", event);
+            if (error instanceof Error) {
+                console.error(error.message);
+            }
+        }
+    }
+);
 
 const firstListener = (data: unknown) => {
     console.log("First listener:", data);
