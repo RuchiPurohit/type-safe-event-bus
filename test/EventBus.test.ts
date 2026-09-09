@@ -421,3 +421,92 @@ test("emitAsync resolves when an event has no listeners", async () => {
         }),
     );
 });
+
+test("emit reports a synchronous listener error and continues", () => {
+    const reportedErrors: Array<{
+        error: unknown;
+        event: keyof TestEvents;
+    }> = [];
+    const calls: string[] = [];
+    const expectedError = new Error("boom");
+    const bus = new EventBus<TestEvents>({
+        onError(error, event) {
+            reportedErrors.push({ error, event });
+        },
+    });
+
+    bus.on("user.created", () => {
+        calls.push("first");
+    });
+    bus.on("user.created", () => {
+        throw expectedError;
+    });
+    bus.on("user.created", () => {
+        calls.push("third");
+    });
+
+    bus.emit("user.created", { userId: "1", name: "Alice" });
+
+    assert.deepEqual(calls, ["first", "third"]);
+    assert.deepEqual(reportedErrors, [
+        { error: expectedError, event: "user.created" },
+    ]);
+});
+
+test("emit reports a rejected listener promise", async () => {
+    const expectedError = new Error("async boom");
+    let reportedError: unknown;
+    let reportedEvent: keyof TestEvents | undefined;
+    const bus = new EventBus<TestEvents>({
+        onError(error, event) {
+            reportedError = error;
+            reportedEvent = event;
+        },
+    });
+
+    bus.on("user.created", async () => {
+        await Promise.resolve();
+        throw expectedError;
+    });
+
+    bus.emit("user.created", { userId: "1", name: "Alice" });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    assert.strictEqual(reportedError, expectedError);
+    assert.equal(reportedEvent, "user.created");
+});
+
+test("emitAsync reports failures and waits for every listener", async () => {
+    const reportedErrors: unknown[] = [];
+    const calls: string[] = [];
+    const bus = new EventBus<TestEvents>({
+        onError(error) {
+            reportedErrors.push(error);
+        },
+    });
+
+    bus.on("user.created", async () => {
+        await Promise.resolve();
+        throw new Error("async boom");
+    });
+    bus.on("user.created", () => {
+        throw "non-Error value";
+    });
+    bus.on("user.created", async () => {
+        await Promise.resolve();
+        calls.push("completed");
+    });
+
+    await assert.doesNotReject(
+        bus.emitAsync("user.created", { userId: "1", name: "Alice" }),
+    );
+
+    assert.deepEqual(calls, ["completed"]);
+    assert.equal(reportedErrors.length, 2);
+    assert.ok(reportedErrors.includes("non-Error value"));
+    assert.ok(
+        reportedErrors.some(
+            (error) => error instanceof Error && error.message === "async boom",
+        ),
+    );
+});
