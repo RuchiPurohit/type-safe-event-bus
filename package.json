@@ -1,16 +1,38 @@
 {
-  "name": "type-safe-event-bus",
+  "name": "@ruchipurohit/type-safe-event-bus",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "A lightweight, strongly typed event bus for TypeScript applications.",
+  "main": "dist/src/EventBus.js",
+  "types": "dist/src/EventBus.d.ts",
+  "files": [
+    "dist/src"
+  ],
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "npm run build && node --test dist/test/*.test.js"
+    "test": "npm run build && node --test dist/test/*.test.js",
+    "prepublishOnly": "npm run build"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "event-bus",
+    "events",
+    "typescript",
+    "pubsub",
+    "type-safe"
+  ],
+  "author": "Ruchi Purohit",
   "license": "MIT",
-  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RuchiPurohit/type-safe-event-bus.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RuchiPurohit/type-safe-event-bus/issues"
+  },
+  "homepage": "https://github.com/RuchiPurohit/type-safe-event-bus#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@types/node": "^26.2.0",
     "typescript": "^7.0.2"
