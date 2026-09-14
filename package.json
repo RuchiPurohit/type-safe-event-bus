@@ -1,5 +1,5 @@
 {
-  "name": "@ruchipurohit/type-safe-event-bus",
+  "name": "@ruchi_purohit/type-safe-event-bus",
   "version": "1.0.0",
   "description": "A lightweight, strongly typed event bus for TypeScript applications.",
   "main": "dist/src/index.js",

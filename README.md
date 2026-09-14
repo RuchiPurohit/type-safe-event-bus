@@ -63,7 +63,7 @@ npm test
 ## Usage
 
 ```ts
-import { EventBus } from "@ruchipurohit/type-safe-event-bus";
+import { EventBus } from "@ruchi_purohit/type-safe-event-bus";
 
 type AppEvents = {
   "user.created": {
@@ -238,7 +238,7 @@ changes should remain focused, readable, and accompanied by relevant tests.
 ## Publishing
 
 The package is configured to be published publicly as
-`@ruchipurohit/type-safe-event-bus`. Before the first publish, sign in to npm
+`@ruchi_purohit/type-safe-event-bus`. Before the first publish, sign in to npm
 and confirm that your npm account owns the `ruchipurohit` scope:
 
 ```bash
