@@ -63,7 +63,7 @@ npm test
 ## Usage
 
 ```ts
-import { EventBus } from "./EventBus.js";
+import { EventBus } from "@ruchipurohit/type-safe-event-bus";
 
 type AppEvents = {
   "user.created": {
@@ -234,6 +234,53 @@ test/
 
 Issues and pull requests are welcome. Because this is a learning project,
 changes should remain focused, readable, and accompanied by relevant tests.
+
+## Publishing
+
+The package is configured to be published publicly as
+`@ruchipurohit/type-safe-event-bus`. Before the first publish, sign in to npm
+and confirm that your npm account owns the `ruchipurohit` scope:
+
+```bash
+npm login
+npm whoami
+```
+
+Build, test, and inspect the exact package contents before publishing:
+
+```bash
+npm ci
+npm run typecheck
+npm test
+npm pack --dry-run
+```
+
+For the initial release, publish from the repository root:
+
+```bash
+npm publish --access public
+```
+
+Later releases are published automatically by
+`.github/workflows/release.yml`. To prepare one:
+
+1. Run `npm version patch`, `npm version minor`, or `npm version major`.
+2. Push the commit and tag with `git push origin main --follow-tags`.
+3. Create and publish a GitHub release for that tag.
+
+The release tag must match the version in `package.json` (for example, tag
+`v1.1.0` for package version `1.1.0`). After the initial publish, open the
+package settings on npmjs.com and add a GitHub Actions trusted publisher with
+these values:
+
+- Organization or user: `RuchiPurohit`
+- Repository: `type-safe-event-bus`
+- Workflow filename: `release.yml`
+- Allowed action: `npm publish`
+
+The workflow uses short-lived OIDC credentials, so it does not require an npm
+token in GitHub. It runs the type checks and tests, verifies the version, and
+publishes a public package with npm provenance.
 
 ## License
 
